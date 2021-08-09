@@ -91,103 +91,132 @@
 * 使用接口定义ISplitter是好的想法，但是在buttonClick() 中，**new BinarySplitter()**等是一种编译时依赖，和具体类型相关，是紧耦合的，这不符合我们的“**依赖倒置原则**”（不应该依赖实现细节）。当出现新的文件分割方法时，必须修改这段代码（这种直接在原来代码段修改的方式不算扩展，而是修改）,MainForm应该是稳定的，支持扩展不支持修改。 
 
 
-* **注意：这里和Strategy 有些相似，都是由很多 if ... else 结构组成，但是这里突出的是很多 new 工作，而Strategy 不是。**  
-
 
 ```java
-    // 定义一个公共的文件分割器接口
-    public interface ISplitter {
-        void split();
+package factory;
+
+/**
+ * @author yishuai
+ * @version 1.0
+ * @description 文件分割基类
+ * @date 2021/8/9 16:29
+ */
+public abstract class AbstractSplit {
+    //抽象文件分割方法
+    abstract void split();
+}
+
+/**
+ * 文本分割方法
+ */
+class TxtSplit extends AbstractSplit{
+
+    @Override
+    void split() {
+        System.out.println("文本分割了~");
     }
-    
-    // 具体文件分割器（以BinarySplitter为例）
-    class BinarySplitter implements ISplitter{
-        @Override
-        public void split() {
-            // ...
-        }
+}
+
+/**
+ * 图片分割方法
+ */
+class ImageSplit extends AbstractSplit{
+
+    @Override
+    void split() {
+        System.out.println("图片分割了~");
     }
+}
 
-    public class MainForm {
+/**
+ * 视频分割方法
+ */
+class VideoSplit extends AbstractSplit{
 
-        // 这里是成员变量定义
-
-        public void buttonClick(String type){
-            ISplitter iSplitter = null;
-
-            if(type.equals("BinarySplitter")){
-                iSplitter =  new BinarySplitter();
-            }
-            else if(type.equals("TextSplitter")) {
-                iSplitter =  new TextSplitter();
-            }
-            else if (type.equals("PictureSplitter")){
-                iSplitter =  new PictureSplitter();
-            }
-            else if(type.equals("VideoSplitter")){
-                iSplitter =  new VideoSplitter();
-            }
-
-            iSplitter.split();
-
-            // ... 其他操作
-        }
-        // ... 其他操作
+    @Override
+    void split() {
+        System.out.println("视频分割了~");
     }
+}
+
 ```  
 
 #### 8.9.3 after
 * ISplitter 不需要改变，增加一个工厂方法接口，用于创建具体对象
 
 ```java
-    // 工厂接口
-    public interface SplitterFactory {
-        ISplitter createSplitter(String type);
+   package factory;
+
+/**
+ * @author yishuai
+ * @version 1.0
+ * @description 工厂基类
+ * @date 2021/8/9 16:26
+ */
+public abstract class AbstractFactory {
+    //创建对应的对象
+    abstract AbstractSplit create();
+}
+
+/**
+ * 文本分割工厂
+ */
+class TxtFactory extends AbstractFactory {
+
+    @Override
+    AbstractSplit create() {
+        return new TxtSplit();
     }
+}
+
+/**
+ * 视频分割工厂
+ */
+class VideoFactory extends AbstractFactory {
+
+    @Override
+    AbstractSplit create() {
+        return new VideoSplit();
+    }
+}
+/**
+ * 图片分割工厂
+ */
+class ImageFactory extends AbstractFactory {
+
+    @Override
+    AbstractSplit create() {
+        return new ImageSplit();
+    }
+}
 ```
 
-* Concrete Factory （工厂接口具体实现类），**把原先在MainForm中new 的任务放到了新的接口实现类中，实现了解耦合**  
+* Factory 依赖abstractFactory 和 abstractSplit，这两个都是接口（抽象、抽象类），是稳定的
 
 ```java
-    class FileSplitterFactory implements  SplitterFactory{
-        @Override
-        public ISplitter createSplitter(String type) {
-            if(type.equals("BinarySplitter")){
-                return new BinarySplitter();
-            }
-            else if(type.equals("TextSplitter")) {
-                return new TextSplitter();
-            }
-            else if (type.equals("PictureSplitter")){
-                return new PictureSplitter();
-            }
-            else if(type.equals("VideoSplitter")){
-                return new VideoSplitter();
-            }
-            return null;
-        }
+   public class Factory {
+
+    public AbstractFactory factory;
+
+    /**
+     * 新建的时候初始化
+     */
+    public Factory(AbstractFactory factory) {
+        this.factory = factory;
     }
-```
 
-* MainFom 依赖ISplitter 和 SplitterFactory，这两个都是接口（抽象），是稳定的
-
-```java
-    public class MainForm {
-        SplitterFactory factory;
-
-        public MainForm(SplitterFactory factory) {
-            this.factory = factory;
-        }
-
+    /**
+     * 文件分割功能
+     */
+    public void split() {
         /**
-         * 李建忠老师给的如下参考代码似乎有问题？
-         * ISplitter iSplitter = factory.createSplitter()
-         * 这并没有给出具体的splitter类型，这也是我对其代码进行更改的原因
+         * 依赖倒置原则：实现细节应该依赖于稳定
          */
-        public void buttonClick(String splitterType){
-            ISplitter iSplitter = factory.createSplitter(splitterType);
-        }
+        AbstractSplit split = factory.create();
+        //多态调用
+        split.split();
     }
+}
 
 ```  
 
